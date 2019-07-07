@@ -27,23 +27,13 @@ public class Server extends Thread {
             Socket socket;
             try {
                 while ((socket = serverSocket.accept()) != null) {
-                    String s=socket.getInetAddress().toString().substring(1);
-                    System.out.println("User connected: "+s);
-                    ResultSet rs=sqlconn.request("SELECT unit_id FROM computers WHERE ip = '" + s + "'");
-                    String id = "";
-                    while (rs.next()) {
-                        id = rs.getString("unit_id");
-                        System.out.println("User unit id: "+id);
-                    }
-                    (new Handler(sqlconn,socket,id,s)).start();
+                    (new Handler(sqlconn,socket)).start();
                 }
             } catch (IOException e) {
-                e.printStackTrace();  // TODO: implement catch
-            } catch (SQLException e) {
                 e.printStackTrace();
             }
         } catch (IOException e) {
-            e.printStackTrace();  // TODO: implement catch
+            e.printStackTrace();
             return;
         }
     }
@@ -57,15 +47,33 @@ public class Server extends Thread {
         private final Socket clientSocket;
         private boolean previousWasR = false;
 
-        public Handler(SQLCONN sqlconn, Socket clientSocket, String id, String ipc)  {
+        public Handler(SQLCONN sqlconn, Socket clientSocket)  {
             this.sqlconn=sqlconn;
-            this.unitid=id;
-            this.ipc=ipc;
+            //this.unitid=id;
+            //this.ipc=ipc;
             this.clientSocket = clientSocket;
         }
 
         @Override
         public void run() {
+
+            ipc=clientSocket.getInetAddress().toString().substring(1);
+            System.out.println("User connected: "+ipc);
+            ResultSet rss= null;
+            try {
+                rss = sqlconn.request("SELECT unit_id FROM computers WHERE ip = '" + ipc + "'");
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+            unitid = "";
+            try {
+                while (rss.next()) {
+                    unitid = rss.getString("unit_id");
+                    System.out.println("User unit id: " + unitid);
+                }
+            }catch (Exception e){
+                e.printStackTrace();
+            }
 
             try {
                 ResultSet rs = sqlconn.request("SELECT * FROM black_list WHERE id IN (SELECT address_id FROM jopa WHERE unit_id = '" + unitid + "')");
@@ -75,10 +83,10 @@ public class Server extends Thread {
                             "INNER JOIN black_list bl on jopa.address_id = bl.id " +
                             "WHERE bl.address = '"+rs.getString("address")+"' " +
                             "AND unit_id = "+unitid+"");
+                    ts.next();
                     if(ts.getBoolean("time_limited")){
                         long beg=ts.getLong("tl_start");
                         long end=ts.getLong("tl_end");
-                        
                         Calendar c = Calendar.getInstance();
                         long now = c.getTimeInMillis();
                         c.set(Calendar.HOUR_OF_DAY, 0);
@@ -87,6 +95,8 @@ public class Server extends Thread {
                         c.set(Calendar.MILLISECOND, 0);
                         long passed = now - c.getTimeInMillis();
                         long secondsPassed = passed / 1000;
+
+                        //System.out.println(beg+"  :::  "+end+"  ---  "+secondsPassed);
                         if(secondsPassed>beg&&secondsPassed<end){
                             list.put(rs.getString("address"),rs.getString("reason"));
                         }
@@ -96,6 +106,7 @@ public class Server extends Thread {
                     //System.out.println(rs.getString("address")+": "+rs.getString("reason"));
                 }
             }catch (Exception e){
+                //e.printStackTrace();
                 System.out.println("Wrong unit id!");
             }
 
