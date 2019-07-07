@@ -78,6 +78,7 @@ public class Server extends Thread {
                     if(ts.getBoolean("time_limited")){
                         long beg=ts.getLong("tl_start");
                         long end=ts.getLong("tl_end");
+                        
                         Calendar c = Calendar.getInstance();
                         long now = c.getTimeInMillis();
                         c.set(Calendar.HOUR_OF_DAY, 0);
