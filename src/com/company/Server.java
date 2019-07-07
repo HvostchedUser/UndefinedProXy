@@ -41,7 +41,7 @@ public class Server extends Thread {
     public static class Handler extends Thread {
         String unitid="";
         String ipc="";
-        HashMap<String,String> list=new HashMap<>();
+        TreeMap<String,String> list=new TreeMap<>();
         SQLCONN sqlconn;
         public static final Pattern CONNECT_PATTERN = Pattern.compile("CONNECT (.+):(.+) HTTP/(1\\.[01])", Pattern.CASE_INSENSITIVE);
         private final Socket clientSocket;
@@ -56,7 +56,7 @@ public class Server extends Thread {
 
         @Override
         public void run() {
-
+            boolean wrongId=false;
             ipc=clientSocket.getInetAddress().toString().substring(1);
             System.out.println("User connected: "+ipc);
             ResultSet rss= null;
@@ -108,10 +108,11 @@ public class Server extends Thread {
             }catch (Exception e){
                 //e.printStackTrace();
                 System.out.println("Wrong unit id!");
+                wrongId=true;
             }
 
 
-
+            if(!wrongId)
             try {
                 String request = readLine(clientSocket);
                 System.out.println("Got request: "+request);
@@ -262,14 +263,12 @@ public class Server extends Thread {
             return false;
         }
 
-        private boolean containsKeyl(HashMap<String, String> list, String gg) {
-            for (String t:list.keySet()) {
+        private boolean containsKeyl(TreeMap<String, String> list, String gg) {
                 //System.out.println(t+" "+gg);
-                if(t.equals(gg)){
+                if(list.containsKey(gg)){
                     //System.out.println("O MY GOWD!");
                     return true;
                 }
-            }
             return false;
         }
 
