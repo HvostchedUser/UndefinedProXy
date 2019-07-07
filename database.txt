@@ -1,0 +1,3 @@
+jdbc:postgresql://ec2-54-246-84-100.eu-west-1.compute.amazonaws.com:5432/df1akdqbsk9ssm
+pzkrduwxzmqirf
+29ac0888c17302618b3ffd26971c1022481cc5a2602cae11e0e7aaf68595a593

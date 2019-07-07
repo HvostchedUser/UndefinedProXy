@@ -13,12 +13,13 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class Server extends Thread {
-    SQLCONN sqlconn=new SQLCONN("jdbc:postgresql://ec2-54-246-84-100.eu-west-1.compute.amazonaws.com:5432/df1akdqbsk9ssm","pzkrduwxzmqirf","29ac0888c17302618b3ffd26971c1022481cc5a2602cae11e0e7aaf68595a593");
-    public static void main(String[] args) throws SQLException {
+    Scanner datfile=new Scanner(new File("database.txt"));
+    SQLCONN sqlconn=new SQLCONN(datfile.nextLine(),datfile.nextLine(),datfile.nextLine());
+    public static void main(String[] args) throws SQLException, FileNotFoundException {
         (new Server()).run();
     }
 
-    public Server() throws SQLException {
+    public Server() throws SQLException, FileNotFoundException {
 
         super("Server Thread");
     }
