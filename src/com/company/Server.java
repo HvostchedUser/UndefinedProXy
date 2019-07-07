@@ -5,10 +5,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Scanner;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -65,21 +62,44 @@ public class Server extends Thread {
             this.unitid=id;
             this.ipc=ipc;
             this.clientSocket = clientSocket;
-            ArrayList<String> bl=new ArrayList<>();
-            ArrayList<String> re=new ArrayList<>();
+        }
+
+        @Override
+        public void run() {
+
             try {
                 ResultSet rs = sqlconn.request("SELECT * FROM black_list WHERE id IN (SELECT address_id FROM jopa WHERE unit_id = '" + unitid + "')");
                 while(rs.next()){
-                    list.put(rs.getString("address"),rs.getString("reason"));
+                    ResultSet ts=sqlconn.request("SELECT jopa.id, bl.address,unit_id, time_limited, tl_start, tl_end " +
+                            "FROM jopa " +
+                            "INNER JOIN black_list bl on jopa.address_id = bl.id " +
+                            "WHERE bl.address = '"+rs.getString("address")+"' " +
+                            "AND unit_id = "+unitid+"");
+                    if(ts.getBoolean("time_limited")){
+                        long beg=ts.getLong("tl_start");
+                        long end=ts.getLong("tl_end");
+                        Calendar c = Calendar.getInstance();
+                        long now = c.getTimeInMillis();
+                        c.set(Calendar.HOUR_OF_DAY, 0);
+                        c.set(Calendar.MINUTE, 0);
+                        c.set(Calendar.SECOND, 0);
+                        c.set(Calendar.MILLISECOND, 0);
+                        long passed = now - c.getTimeInMillis();
+                        long secondsPassed = passed / 1000;
+                        if(secondsPassed>beg&&secondsPassed<end){
+                            list.put(rs.getString("address"),rs.getString("reason"));
+                        }
+                    }else{
+                        list.put(rs.getString("address"),rs.getString("reason"));
+                    }
                     //System.out.println(rs.getString("address")+": "+rs.getString("reason"));
                 }
             }catch (Exception e){
                 System.out.println("Wrong unit id!");
             }
-        }
 
-        @Override
-        public void run() {
+
+
             try {
                 String request = readLine(clientSocket);
                 System.out.println("Got request: "+request);
