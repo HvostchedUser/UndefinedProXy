@@ -79,8 +79,14 @@ public class Server extends Thread {
                 ResultSet wlister=sqlconn.request("SELECT whitelisted FROM units WHERE units.id = '"+unitid+"'");
                 wlister.next();
                 whitelisted=wlister.getBoolean("whitelisted");
+                if(whitelisted){
+                    System.out.println("Whitelist content blocking mode");
+                }else{
+                    System.out.println("Blacklist content blocking mode");
+                }
             } catch (SQLException e) {
-                e.printStackTrace();
+                System.out.println("Wrong unit id!");
+                wrongId = true;
             }
             if(!whitelisted) {
                 try {
@@ -259,7 +265,7 @@ public class Server extends Thread {
 
                         }
                     }else{
-                        System.out.println("BLACKLISTED!");
+                        System.out.println("Blocked!");
                     }
                 }else{
                     System.out.println("Not a CONNECT request");
@@ -288,7 +294,7 @@ public class Server extends Thread {
                         scs.next();
                         Socket forwardSocket = new Socket(add, 80);
                         if(!checkForWLAndLog(add,clientSocket,scs.next())) {
-                            System.out.println(request);
+                            //System.out.println(request);
                             OutputStream fos = forwardSocket.getOutputStream();
                             fos.write(request.getBytes());
                             fos.flush();
@@ -302,7 +308,7 @@ public class Server extends Thread {
                             };
                             remoteToClient.start();
                         }else {
-                            System.out.println("BLACKLISTED!");
+                            System.out.println("Blocked!");
                         }
                     }else{
                         //System.out.println("Not even a GET request");
