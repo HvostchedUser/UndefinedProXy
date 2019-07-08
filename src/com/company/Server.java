@@ -39,6 +39,7 @@ public class Server extends Thread {
     }
 
     public static class Handler extends Thread {
+        boolean whitelisted=false;
         String unitid="";
         String ipc="";
         TreeMap<String,String> list=new TreeMap<>();
@@ -74,41 +75,86 @@ public class Server extends Thread {
             }catch (Exception e){
                 e.printStackTrace();
             }
-
             try {
-                ResultSet rs = sqlconn.request("SELECT * FROM black_list WHERE id IN (SELECT address_id FROM jopa WHERE unit_id = '" + unitid + "')");
-                while(rs.next()){
-                    ResultSet ts=sqlconn.request("SELECT jopa.id, bl.address,unit_id, time_limited, tl_start, tl_end " +
-                            "FROM jopa " +
-                            "INNER JOIN black_list bl on jopa.address_id = bl.id " +
-                            "WHERE bl.address = '"+rs.getString("address")+"' " +
-                            "AND unit_id = "+unitid+"");
-                    ts.next();
-                    if(ts.getBoolean("time_limited")){
-                        long beg=ts.getLong("tl_start");
-                        long end=ts.getLong("tl_end");
-                        Calendar c = Calendar.getInstance();
-                        long now = c.getTimeInMillis();
-                        c.set(Calendar.HOUR_OF_DAY, 0);
-                        c.set(Calendar.MINUTE, 0);
-                        c.set(Calendar.SECOND, 0);
-                        c.set(Calendar.MILLISECOND, 0);
-                        long passed = now - c.getTimeInMillis();
-                        long secondsPassed = passed / 1000;
+                ResultSet wlister=sqlconn.request("SELECT whitelisted FROM units WHERE units.id = '"+unitid+"'");
+                wlister.next();
+                whitelisted=wlister.getBoolean("whitelisted");
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+            if(!whitelisted) {
+                try {
+                    ResultSet rs = sqlconn.request("SELECT * FROM black_list WHERE id IN (SELECT address_id FROM jopa WHERE unit_id = '" + unitid + "')");
+                    while (rs.next()) {
+                        ResultSet ts = sqlconn.request("SELECT jopa.id, bl.address,unit_id, time_limited, tl_start, tl_end " +
+                                "FROM jopa " +
+                                "INNER JOIN black_list bl on jopa.address_id = bl.id " +
+                                "WHERE bl.address = '" + rs.getString("address") + "' " +
+                                "AND unit_id = " + unitid + "");
+                        ts.next();
+                        if (ts.getBoolean("time_limited")) {
+                            long beg = ts.getLong("tl_start");
+                            long end = ts.getLong("tl_end");
+                            Calendar c = Calendar.getInstance();
+                            long now = c.getTimeInMillis();
+                            c.set(Calendar.HOUR_OF_DAY, 0);
+                            c.set(Calendar.MINUTE, 0);
+                            c.set(Calendar.SECOND, 0);
+                            c.set(Calendar.MILLISECOND, 0);
+                            long passed = now - c.getTimeInMillis();
+                            long secondsPassed = passed / 1000;
 
-                        //System.out.println(beg+"  :::  "+end+"  ---  "+secondsPassed);
-                        if(secondsPassed>beg&&secondsPassed<end){
-                            list.put(rs.getString("address"),rs.getString("reason"));
+                            //System.out.println(beg+"  :::  "+end+"  ---  "+secondsPassed);
+                            if (secondsPassed > beg && secondsPassed < end) {
+                                list.put(rs.getString("address"), rs.getString("reason"));
+                            }
+                        } else {
+                            list.put(rs.getString("address"), rs.getString("reason"));
                         }
-                    }else{
-                        list.put(rs.getString("address"),rs.getString("reason"));
+                        //System.out.println(rs.getString("address")+": "+rs.getString("reason"));
                     }
-                    //System.out.println(rs.getString("address")+": "+rs.getString("reason"));
+                } catch (Exception e) {
+                    //e.printStackTrace();
+                    System.out.println("Wrong unit id!");
+                    wrongId = true;
                 }
-            }catch (Exception e){
-                //e.printStackTrace();
-                System.out.println("Wrong unit id!");
-                wrongId=true;
+            }else{
+
+                try {
+                    ResultSet rs = sqlconn.request("SELECT * FROM white_list WHERE id IN (SELECT address_id FROM apoj WHERE unit_id = '" + unitid + "')");
+                    while (rs.next()) {
+                        ResultSet ts = sqlconn.request("SELECT apoj.id, bl.address,unit_id, time_limited, tl_start, tl_end " +
+                                "FROM apoj " +
+                                "INNER JOIN white_list bl on apoj.address_id = bl.id " +
+                                "WHERE bl.address = '" + rs.getString("address") + "' " +
+                                "AND unit_id = " + unitid + "");
+                        ts.next();
+                        if (ts.getBoolean("time_limited")) {
+                            long beg = ts.getLong("tl_start");
+                            long end = ts.getLong("tl_end");
+                            Calendar c = Calendar.getInstance();
+                            long now = c.getTimeInMillis();
+                            c.set(Calendar.HOUR_OF_DAY, 0);
+                            c.set(Calendar.MINUTE, 0);
+                            c.set(Calendar.SECOND, 0);
+                            c.set(Calendar.MILLISECOND, 0);
+                            long passed = now - c.getTimeInMillis();
+                            long secondsPassed = passed / 1000;
+
+                            //System.out.println(beg+"  :::  "+end+"  ---  "+secondsPassed);
+                            if (secondsPassed > beg && secondsPassed < end) {
+                                list.put(rs.getString("address"), "Only whitelisted domains are available");
+                            }
+                        } else {
+                            list.put(rs.getString("address"), "Only whitelisted domains are available");
+                        }
+                        //System.out.println(rs.getString("address")+": "+rs.getString("reason"));
+                    }
+                } catch (Exception e) {
+                    //e.printStackTrace();
+                    System.out.println("Wrong unit id!");
+                    wrongId = true;
+                }
             }
 
 
@@ -276,8 +322,10 @@ public class Server extends Thread {
         }
 
         private boolean checkForWLAndLog(String gg,Socket forwardSocket,String fulladr) throws IOException, SQLException {
-            if(containsKeyl(list,gg)||containsKeyl(list,gg.replace("www.",""))){
-                String s="<html><body><h1>This site is blocked</h1><br><h3>Reason: "+list.get(gg)+"</h3></body></html>";
+            if( ((containsKeyl(list,gg)||containsKeyl(list,gg.replace("www.",""))) && whitelisted==false ) || ((!containsKeyl(list,gg)&&!containsKeyl(list,gg.replace("www.",""))) && whitelisted==true )){
+                String s="";
+                if(!whitelisted)s="<html><body><h1>This site is blocked</h1><br><h3>Reason: "+list.get(gg)+"</h3></body></html>";
+                else s="<html><body><h1>This site is blocked</h1><br><h3>Reason: Only whitelisted domains are avalaible.</h3></body></html>";
                 String response = "HTTP/1.1 403 Forbidden\r\n" +
                         "Server: UndefinedServer\r\n" +
                         "Content-Type: text/html\r\n" +
