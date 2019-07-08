@@ -117,6 +117,35 @@ public class Server extends Thread {
                 String request = readLine(clientSocket);
                 System.out.println("Got request: "+request);
 
+                ResultSet lockTest= null;
+                try {
+                    lockTest = sqlconn.request("SELECT locked FROM computers WHERE ip = '"+ipc+"'");
+                    lockTest.next();
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
+                try {
+                    if(lockTest.getBoolean("locked")){
+                        System.out.println("User "+ipc+" is locked.");
+                        String s="<html><head><meta charset=UTF-8></head><body><h1>Не, ну это бан.</h1><br><h3>Пожалуйста, оставайтесь на месте. Если вы заметите в округе чёрный фургон<br> с надписью \"Хлеб\", то вам следует проследовать к нему.</h3></body></html>";
+                        String response = "HTTP/1.1 403 Forbidden\r\n" +
+                                "Server: UndefinedServer\r\n" +
+                                "Content-Type: text/html\r\n" +
+                                "Content-Length: " + s.getBytes().length + "\r\n" +
+                                "Connection: close\r\n\r\n";
+                        String result = response + s;
+                        OutputStream os=clientSocket.getOutputStream();
+                        os.write(result.getBytes());
+                        os.flush();
+                        clientSocket.close();
+                        return;
+                    }
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+
                 Matcher matcher = CONNECT_PATTERN.matcher(request);
                 if (matcher.matches()) {
                     String header;
@@ -188,7 +217,7 @@ public class Server extends Thread {
                     }
                 }else{
                     System.out.println("Not a CONNECT request");
-                    if (true) {
+                    if (request.length()>0) {
                         String temp = "";
                         do {
                             request += temp + "\r\n";
@@ -247,9 +276,9 @@ public class Server extends Thread {
         }
 
         private boolean checkForWLAndLog(String gg,Socket forwardSocket,String fulladr) throws IOException, SQLException {
-            if(containsKeyl(list,gg)){
+            if(containsKeyl(list,gg)||containsKeyl(list,gg.replace("www.",""))){
                 String s="<html><body><h1>This site is blocked</h1><br><h3>Reason: "+list.get(gg)+"</h3></body></html>";
-                String response = "HTTP/1.1 200 OK\r\n" +
+                String response = "HTTP/1.1 403 Forbidden\r\n" +
                         "Server: UndefinedServer\r\n" +
                         "Content-Type: text/html\r\n" +
                         "Content-Length: " + s.length() + "\r\n" +
