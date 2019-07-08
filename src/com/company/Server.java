@@ -10,9 +10,10 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class Server extends Thread {
-    Scanner datfile=new Scanner(new File("database.txt"));
+    Scanner datfile=new Scanner(new File("../database.txt"));
     SQLCONN sqlconn=new SQLCONN(datfile.nextLine(),datfile.nextLine(),datfile.nextLine());
     public static void main(String[] args) throws SQLException, FileNotFoundException {
+        System.out.println("Starting...");
         (new Server()).run();
     }
 
@@ -26,8 +27,11 @@ public class Server extends Thread {
         try (ServerSocket serverSocket = new ServerSocket(9999)) {
             Socket socket;
             try {
+
+                System.out.println("Running.");
                 while ((socket = serverSocket.accept()) != null) {
                     (new Handler(sqlconn,socket)).start();
+                    System.out.println("Ready");
                 }
             } catch (IOException e) {
                 e.printStackTrace();
