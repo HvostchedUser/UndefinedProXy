@@ -139,7 +139,7 @@ public class Server extends Thread {
                         outputStreamWriter.flush();
                         return;
                     }
-                    if(!checkForWLAndLog(matcher.group(1),clientSocket)) {
+                    if(!checkForWLAndLog(matcher.group(1),clientSocket,"HTTPS Encryption.")) {
                         try {
                             outputStreamWriter.write("HTTP/" + matcher.group(3) + " 200 Connection established\r\n");
                             outputStreamWriter.write("Proxy-agent: UndefinedProxy1.0\r\n");
@@ -209,8 +209,10 @@ public class Server extends Thread {
                         if (add.length() >= 1 && add.charAt(add.length() - 1) == '/')
                             add = add.substring(0, add.length() - 1);
                         //System.out.println(add);
+                        Scanner scs=new Scanner(request);
+                        scs.next();
                         Socket forwardSocket = new Socket(add, 80);
-                        if(!checkForWLAndLog(add,clientSocket)) {
+                        if(!checkForWLAndLog(add,clientSocket,scs.next())) {
                             System.out.println(request);
                             OutputStream fos = forwardSocket.getOutputStream();
                             fos.write(request.getBytes());
@@ -244,7 +246,7 @@ public class Server extends Thread {
             }
         }
 
-        private boolean checkForWLAndLog(String gg,Socket forwardSocket) throws IOException, SQLException {
+        private boolean checkForWLAndLog(String gg,Socket forwardSocket,String fulladr) throws IOException, SQLException {
             if(containsKeyl(list,gg)){
                 String s="<html><body><h1>This site is blocked</h1><br><h3>Reason: "+list.get(gg)+"</h3></body></html>";
                 String response = "HTTP/1.1 200 OK\r\n" +
@@ -256,10 +258,10 @@ public class Server extends Thread {
                 OutputStream os=forwardSocket.getOutputStream();
                 os.write(result.getBytes());
                 os.flush();
-                sqlconn.requestSend("INSERT INTO logs(computer_id, address, is_success) SELECT computers.id, '"+gg+"', "+"FALSE"+" FROM computers WHERE computers.ip = '"+ipc+"'");
+                sqlconn.requestSend("INSERT INTO logs(computer_id, address, is_success) SELECT computers.id, '"+gg+": "+fulladr+"', "+"FALSE"+" FROM computers WHERE computers.ip = '"+ipc+"'");
                 return true;
             }
-            sqlconn.requestSend("INSERT INTO logs(computer_id, address, is_success) SELECT computers.id, '"+gg+"', "+"TRUE"+" FROM computers WHERE computers.ip = '"+ipc+"'");
+            sqlconn.requestSend("INSERT INTO logs(computer_id, address, is_success) SELECT computers.id, '"+gg+": "+fulladr+"', "+"TRUE"+" FROM computers WHERE computers.ip = '"+ipc+"'");
             return false;
         }
 
