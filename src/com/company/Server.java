@@ -14,7 +14,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class Server extends Thread {
-    //Scanner datfile=new Scanner(new File("../database.txt"));
 
     JSONTokener tokener = new JSONTokener(new FileReader("../config.json"));
     JSONObject rootObj = new JSONObject(tokener);
