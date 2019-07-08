@@ -302,7 +302,15 @@ public class Server extends Thread {
                         //System.out.println(add);
                         Scanner scs=new Scanner(request);
                         scs.next();
-                        Socket forwardSocket = new Socket(add, 80);
+                        int port=80;
+                        if(add.contains(":")){
+                            String[] spl=add.split(":");
+                            add=spl[0];
+                            port=Integer.parseInt(spl[1]);
+                        }
+                        System.out.println("Domain: "+add+" | Port: "+port);
+                        Socket forwardSocket = new Socket(add, port);
+                        System.out.println(add);
                         if(!checkForWLAndLog(add,clientSocket,scs.next())) {
                             //System.out.println(request);
                             OutputStream fos = forwardSocket.getOutputStream();

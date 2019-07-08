@@ -2,8 +2,12 @@
   <artifact type="jar" name="proxya:jar">
     <output-path>$PROJECT_DIR$/out/artifacts/proxya_jar</output-path>
     <root id="archive" name="proxya.jar">
+      <element id="directory" name="META-INF">
+        <element id="file-copy" path="$PROJECT_DIR$/mf/META-INF/MANIFEST.MF" />
+      </element>
       <element id="module-output" name="proxya" />
       <element id="extracted-dir" path="$MAVEN_REPOSITORY$/org/postgresql/postgresql/42.2.5/postgresql-42.2.5.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$MAVEN_REPOSITORY$/org/json/json/20180813/json-20180813.jar" path-in-jar="/" />
     </root>
   </artifact>
 </component>
