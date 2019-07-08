@@ -1,5 +1,9 @@
 package com.company;
 
+
+import org.json.JSONObject;
+import org.json.JSONTokener;
+
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -10,8 +14,11 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class Server extends Thread {
-    Scanner datfile=new Scanner(new File("../database.txt"));
-    SQLCONN sqlconn=new SQLCONN(datfile.nextLine(),datfile.nextLine(),datfile.nextLine());
+    //Scanner datfile=new Scanner(new File("../database.txt"));
+
+    JSONTokener tokener = new JSONTokener(new FileReader("../config.json"));
+    JSONObject rootObj = new JSONObject(tokener);
+    SQLCONN sqlconn=new SQLCONN("jdbc:postgresql://"+rootObj.getString("db_host")+":"+rootObj.getInt("db_port")+"/"+rootObj.getString("db_database"),rootObj.getString("db_login"),rootObj.getString("db_passwd"));
     public static void main(String[] args) throws SQLException, FileNotFoundException {
         System.out.println("Starting...");
         (new Server()).run();
